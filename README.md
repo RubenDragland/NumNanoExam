@@ -1,2 +1,2 @@
 # NumNanoExam
-Solves 5-6 exam TFY4235 NTNU
+Solves 5-6 exam tasks TFY4235 NTNU
