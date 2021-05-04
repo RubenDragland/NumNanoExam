@@ -56,6 +56,8 @@ SIIaRstochasticPLOTa(tD, t, dataDeterministic, Y, dLabels)
 '''
 #Forskjøvet, forventet pga inkubasjon.
 
+#Kind of ruined due to commuter model... Fix bigsimulate...
+
 
 #%%
 
@@ -76,7 +78,7 @@ def calculateInfectedGivenIsolation(isolations):
         tMax = 180
         
         y,t = runNumerics(y0, t0, tMax, h, multinomialDerivates, multinomialStepping)
-        infected.append(y.T[1])
+        infected.append(y.T[2] +y.T[3]) #Actually exposed. FIX THIS Not all of them are infected (Perhaps solved now)
     
     infected = np.array(infected)
     return infected, t
@@ -91,7 +93,15 @@ isolationLabels = ['0.3', '0.31', '0.32', '0.33', '0.34', '0.35', '0.36', '0.37'
 
 stochasticExpPlOT3b(t, infections, isolationLabels)
 
+#NOTE that the drop is explained by the fact that the graph shows exposed people. 
+
 
 #rs 0.4 is below R1 almost 25 days.
 #Tested 180 days, changes every time. a bit of luck or unluck, 0.3 seems fine. 
 #About half of the 30s is always below R1. Suggestion, do confidence-interval for 0.35, see how many times below R1 in 100 runs. 
+
+def confidenceIntervalIsolation():
+    #Runs with rs=0.35
+    #Should be quite long tMax, at least 180 days, probabily 720. 
+    #Check area under curve, sum in every point. If larger than R1, then exp growth. 
+    return #Later. 

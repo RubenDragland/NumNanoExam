@@ -36,12 +36,13 @@ logger.setLevel(logging.INFO)
 
 #logging.info('Testing')
 
-global beta, tau, N, h, isolationRestriction
+global beta, tau, N, h, isolationRestriction, rng
 h = 0.1
 beta = 2
 tau = 1
 N = 1
 isolationRestriction = 1
+rng = np.random.default_rng()
 
 def fODE(y, t):
     #Returning coupled ODE as vector
@@ -152,9 +153,11 @@ def simulate180days(initR, IperN, h, model, f, method = rk4):
     return y, t
 
 #Remember holes in terms of initI and vaccinacted
+#Fix the shape-stuff. Easiest is to increase the number of parameters. (If not several errors occur)
+#@profile
 def bigSimulate180days(initE, initR, h, model, f, method ):
     
-    y0 = np.array([N - initE - initR, initE, 0, 0, initR ])
+    y0 = np.array([N - initE - initR, initE, np.zeros(N.shape), np.zeros(N.shape), initR ] ) 
     t0 = 0
     tMax = 180
     
@@ -210,13 +213,25 @@ def binomialStepping(y, t, h, f):
 
 
 #f, or derivatives function
+#@jit(nopython = True)
+#@profile
+
 def multinomialDerivates(y,t):
         
-    S =  y[0]
-    E =  y[1]
-    I =  y[2]
-    Ia = y[3]
-    R =  y[4]
+    S =  y[0].astype(np.int64)
+    E =  y[1].astype(np.int64)
+    I =  y[2].astype(np.int64)
+    Ia = y[3].astype(np.int64)
+    R =  y[4].astype(np.int64)
+    
+    #To be able to feed numbered probabilities, sum the each S, E etc. Does also hold when S, E are numbers.
+    #Calculates total population at given time the function is called (day/night)    
+    Spop = np.sum(S)
+    Epop = np.sum(E)
+    Ipop = np.sum(I)
+    Iapop = np.sum(Ia)
+    Rpop = np.sum(R) 
+    Npop = Spop + Epop + Ipop + Iapop + Rpop #For readability.
     
     dt = h    
     beta = 0.55
@@ -227,23 +242,28 @@ def multinomialDerivates(y,t):
     tauE = 3
     tauI = 7
     
-    pExposed = 1 - np.exp(-dt*beta* (rs*I + ra*Ia)/N )
+    pExposed = 1 - np.exp(-dt*beta* (rs*Ipop + ra*Iapop)/Npop )
     pInfected = fs* (1 - np.exp(-dt/tauE) )
     pInfectedA = fa * (1- np.exp(-dt/tauE ) )
     pRecovering = 1 - np.exp(-dt/tauI)
-    pRecoveringA = 1 - np.exp(-dt/tauI)
+    pRecoveringA = 1 - np.exp(-dt/tauI) #Now, these are numbers regardless of parameter dimensions
     
-    rng = np.random.default_rng()
-    deltaI, deltaIa, deltaEzero = rng.multinomial(E, [pInfected, pInfectedA, 1- pInfected - pInfectedA])    
-    deltaS = binomial(S, pExposed)
-    deltaR = binomial(I, pRecovering ) 
-    deltaRa = binomial(Ia, pRecoveringA)
+    
+    #multi = rng.multinomial(E, [pInfected, pInfectedA, 1- pInfected - pInfectedA]) #deltaEzero #Shocking, tries to drop deltaEzero because of unpacking error. May be issue in other case.
+
+    deltaI, deltaIa, deltaEzero = rng.multinomial(E, [pInfected, pInfectedA, 1- pInfected - pInfectedA]).T
+    deltaS = rng.binomial(S, pExposed) #binomial(S, pExposed) Remember to check if this works.
+    deltaR = rng.binomial(I, pRecovering) #binomial(I, pRecovering ) 
+    deltaRa = rng.binomial(Ia, pRecoveringA) #binomial(Ia, pRecoveringA) Update np.random to recommended library function
     
     changes = np.array( [deltaS, deltaI, deltaIa, deltaR, deltaRa] )
     
-    return changes
+    return changes #Tested with another script after changing, seems to work, but initally decline???
 
 #Same as rk4
+#@jit(nopython = True)
+#@profile
+
 def multinomialStepping(y, t, h, f):
     
     changes = f(y,t)
@@ -264,6 +284,89 @@ def multinomialStepping(y, t, h, f):
     
     return y_
     
+#%%
+
+#Next, the commuter model should be able to run the previous for each element in the matrix. 
+#Should reduce timestep to 0.5 day, so that alternating populations.
+#Population N-matrix. 
+
+
+#S = np.array([[], []] ) osv
+
+#Set up initial conditions like this. New run numerics that loops in a good way. 
+#Begins the same way as runNumerics
+#@jit(nopython = True)
+#@profile
+
+def runCommuter(y0, t0, tMax, h, f, method):
+    
+    steps = int(tMax/h)
+    
+    #initialY = np.array(y0) #Making sure it is a numpy array. 
+    y = np.zeros((steps +2, len(y0), len(y0[0]), len(y0[0,0])))  #Has not found a better way. But is regardless not more dimensions.  *y0.shape
+    t = np.zeros(steps+2)
+    
+    #print(y[0])
+    y[0, :] = y0
+    t[0]    = t0
+    
+    nTowns = len(N)
+    
+    time = t0
+    for x in range(steps +1):
+        h = min(h, tMax-time) #Still using the same approach as given in lectures. Now take day/night into account. 
+        
+        
+        if x%2 : #Equals 1 is true, this should be day because i equals night is first in the matrix. 
+            #Find N, S, etc by summing over columns
+            for j in range(nTowns):
+                #Daytime populations                
+                y[x+1, :,:,j] = method(y[x, :, :, j], time, h, f )
+                            
+        else:
+            #Find number of N, S etc by summing over rows.
+            #Filter out the correct arrays for nightime, and do one step. 
+            for i in range(nTowns):
+                #Nighttime populations
+                y[x+1, :, i, :] = method(y[x, :, i, :], time, h, f)
+                
+        t[x+1] = t[x] + h
+        time += h       
+                
+               
+    return y, t
+
+#@profile            
+def profiling():
+    global N          
+    N = np.array( [[198600, 100, 100, 100, 100, 1000, 0, 0, 0, 0],
+                   [500, 9500, 0, 0, 0, 0, 0, 0, 0, 0],
+                   [500, 0, 9500, 0, 0, 0, 0, 0, 0, 0],
+                   [500, 0, 0, 9500, 0, 0, 0, 0, 0, 0],
+                   [500, 0, 0, 0, 9500, 0, 0, 0, 0, 0],
+                   [1000, 0, 0, 0, 0, 498200, 200, 200, 200, 200],
+                   [0, 0, 0, 0, 0, 1000, 19000, 0, 0, 0],
+                   [0, 0, 0, 0, 0, 1000, 0, 19000, 0, 0],
+                   [0, 0, 0, 0, 0, 1000, 0, 0, 19000, 0],
+                   [0, 0, 0, 0, 0, 1000, 0, 0, 0, 19000],               
+                   ]) #DO NOT DELETE
+    #ExamImplementation.N = N #Important as hell.
+    initE = np.zeros(N.shape)
+    initE[1, 1] = 25 #The home-stayers in town 2 start of exposed
+    initR = np.zeros(N.shape)
+    
+    Y = [] #holds data
+    for x in trange(10):
+        y, t = bigSimulate180days(initE, initR, h, runCommuter, multinomialDerivates, multinomialStepping) #25 Exposed, no vaccinated
+        Y.append(y)            
+                
+               
+                
+#profiling()                
+    
+    
+    
+
 
 
     

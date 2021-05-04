@@ -151,6 +151,88 @@ def stochasticExpPlOT3b(t, data, labels):
     ax.set_title(f'Self-isolation effect', fontsize = 20)
     plt.show()
     
+
+def calcPop(number, S):
+    pop = [np.sum(x) for x in S[:, number, :]]
+    return pop
+    
+    
+def SIIaRcommuterPLOTa(t, data, nTowns): #Run 10 times again.
+    
+    fig, axes = plt.subplots(nTowns, 1, sharex = True, sharey = False, constrained_layout = True, figsize = (10, 20))
+    
+    plt.suptitle(f'Commuter model epidemic', fontsize = 20)
+    
+    for x, prop in enumerate(data):        
+        S, E, I, Ia, R = prop[:, 0], prop[:, 1], prop[:, 2], prop[:, 3], prop[:, 4]       
+        
+        
+        for number, y in enumerate(axes):
+            #Believe it is necessary to transpose
+            Spop = calcPop(number, S)           
+            Epop = calcPop(number, E) 
+            Ipop = calcPop(number, I)
+            Iapop = calcPop(number, Ia)
+            Rpop = calcPop(number, R)
+            
+            y.plot(t, Spop, alpha = 0.5) #label = f'S{number}')
+            y.plot(t, Epop, alpha = 0.5) #label = f'E{number}')
+            y.plot(t, Ipop, alpha = 0.5) #label = f'I{number}')
+            y.plot(t, Iapop, alpha = 0.5) #label = f'Ia{number}')
+            y.plot(t, Rpop, alpha = 0.5) #label = f'R{number}')
+            y.title.set_text(f'Town{number}')
+            y.set_ylabel('Population', fontsize = 14)       
+    y.set_xlabel('t [days]', fontsize = 14)
+    
+    plt.plot()
+    
+def SIIaRnorwayPLOTa(t, data, nTowns): #Run 10 times again. Not useful for anything...
+    
+    fig, axes = plt.subplots(nTowns, 1, sharex = True, sharey = False, constrained_layout = True, figsize = (10, 20))
+    
+    plt.suptitle(f'Commuter model epidemic', fontsize = 20)
+    
+    for x, prop in enumerate(data):        
+        S, E, I, Ia, R = prop[:, 0], prop[:, 1], prop[:, 2], prop[:, 3], prop[:, 4]       
+        
+        
+        for number, y in enumerate(axes):
+            #Believe it is necessary to transpose
+            Ipop = calcPop(number, I)
+            Iapop = calcPop(number, Ia)
+            if (Ipop+Iapop > 10):            
+                Spop = calcPop(number, S)           
+                Epop = calcPop(number, E) 
+                
+                Rpop = calcPop(number, R)
+                
+                y.plot(t, Spop, alpha = 0.5) #label = f'S{number}')
+                y.plot(t, Epop, alpha = 0.5) #label = f'E{number}')
+                y.plot(t, Ipop, alpha = 0.5) #label = f'I{number}')
+                y.plot(t, Iapop, alpha = 0.5) #label = f'Ia{number}')
+                y.plot(t, Rpop, alpha = 0.5) #label = f'R{number}')
+                y.title.set_text(f'Town{number}')
+                y.set_ylabel('Population', fontsize = 14)       
+    y.set_xlabel('t [days]', fontsize = 14)
+    
+    plt.plot()
+    
+def nationWideOutbreakPLOTe(t, data):
+    
+    fig, ax = plt.subplots(constrained_layout = True, figsize = (12, 6))
+    
+    for x, value in enumerate(data):        
+        ax.plot(t, value, alpha = 0.7)
+    ax.set_xlabel('t [days]', fontsize = 14)
+    ax.set_ylabel('Outbreaks', fontsize = 14)
+    ax.set_title('Number of outbreaks nationwide', fontsize = 20 )
+    plt.plot
+    
+    
+    
+
+
+           
     
     
     

@@ -115,7 +115,7 @@ def bisectionMethod(desiredPeak, a, b, expression, tol = 1e-3, maxiter = 100):
 
 #Can easily be calculated analytically from the derivative in the expression. EDIT: NOT. 
 #print(maxPeak, maxBeta)
-#Look up similar methods to the bisection method. 
+#Look up similar methods to the bisection method. Secant seems nice, not Newton has to take the derivative. 
 
 
 #%%
