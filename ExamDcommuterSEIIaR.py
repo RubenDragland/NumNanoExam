@@ -22,6 +22,7 @@ from ExamImplementation import  runNumerics, simulate180days, deltaInfection, de
 from ExamImplementation import fODE, earlydIdt, rk4
 from ExamImplementation import  iterativeBisection, semiAnalyticalDeterministicS, semiAnalyticalDeterministicR
 from ExamImplementation import multinomialDerivates, multinomialStepping, bigSimulate180days, runCommuter
+from ExamImplementation import jitjitjitDerivatives, jitjitjitINIT, jitjitjitStepping, jitjitjitRUN
 
 from ExamPlots import deterministicPLOTa, deterministicInfectedPLOTb, deterministicExpPLOTd, stochasticPLOTa, partDeterministic, stochasticInfectedPLOTb
 from ExamPlots import probabilityPLOTc, SIIaRstochasticPLOTa, stochasticExpPlOT3b, SIIaRcommuterPLOTa, calcPop, SIIaRnorwayPLOTa, nationWideOutbreakPLOTe
@@ -40,17 +41,19 @@ ExamImplementation.isolationRestriction = 1
 #%%
 
 #Assume that 25 in (0,0) in town 1 (Not commuters) are initally exposed. Will create a small delay. 
-
 '''
+
 N = np.array( [[9000, 1000], [200, 99800] ])
 ExamImplementation.N = N #Important as hell.
 initE = np.zeros(N.shape)
-initE[0, 0] = 25 #The home-stayers in town 1 start of exposed
+initE[1, 1] = 25 #The home-stayers in town 1 start of exposed
+initI = np.zeros(N.shape)
+initIa = np.zeros(N.shape)
 initR = np.zeros(N.shape)
 
 Y = [] #holds data
 for x in trange(10):
-    y, t = bigSimulate180days(initE, initR, h, runCommuter, multinomialDerivates, multinomialStepping) #25 Exposed, no vaccinated
+    y, t = bigSimulate180days(initE, initI, initIa, initR, h, runCommuter, multinomialDerivates, multinomialStepping) #25 Exposed, no vaccinated
     Y.append(y)
 
 Y = np.array(Y)
@@ -61,9 +64,9 @@ Y = np.array(Y)
 #np.save(f'2Da10TEST180daysh{h}.npy', Y)
 #np.save(f'2Da10TESTtimeh{h}.npy', t)
 
-SIIaRcommuterPLOTa(t, Y, 2)
-
+SIIaRcommuterPLOTa(t, Y, 2, 12, 8)
 '''
+
 #Notes for b
 #Tests done to ensure
 #No outbreak in big city if no commuting. See fig. 
@@ -75,7 +78,7 @@ SIIaRcommuterPLOTa(t, Y, 2)
 
 #Bigger commuting system
 
-'''
+
 N = np.array( [[198600, 100, 100, 100, 100, 1000, 0, 0, 0, 0],
                [500, 9500, 0, 0, 0, 0, 0, 0, 0, 0],
                [500, 0, 9500, 0, 0, 0, 0, 0, 0, 0],
@@ -89,23 +92,26 @@ N = np.array( [[198600, 100, 100, 100, 100, 1000, 0, 0, 0, 0],
                ]) #DO NOT DELETE
 ExamImplementation.N = N #Important as hell.
 initE = np.zeros(N.shape)
-initE[1, 1] = 25 #The home-stayers in town 2 start of exposed
+initE[0, 0] = 25 #The home-stayers in town 2 start of exposed
+initI = np.zeros(N.shape)
+initIa = np.zeros(N.shape)
 initR = np.zeros(N.shape)
-
+'''
 Y = [] #holds data
 for x in trange(10):
-    y, t = bigSimulate180days(initE, initR, h, runCommuter, multinomialDerivates, multinomialStepping) #25 Exposed, no vaccinated
+    y, t = bigSimulate180days(initE, initI, initIa, initR, h, runCommuter, multinomialDerivates, multinomialStepping) #25 Exposed, no vaccinated
+    #y, t = bigSimulate180days(initE, initI, initIa, initR, h, jitjitjitINIT, jitjitjitDerivatives, jitjitjitStepping)
     Y.append(y)
 
-Y = np.array(Y)
+Y = np.array(Y)'''
 #np.save(f'2Ea10simulations180daysh{h}.npy', Y)
 #np.save(f'2Ea10timeh{h}.npy', t)
 
 
 #Y = np.load(f'2Ea10simulations180daysh{h}.npy')
 #t = np.load(f'2Ea10timeh{h}.npy')
-SIIaRcommuterPLOTa(t, Y, len(N))
-'''
+#SIIaRcommuterPLOTa(t, Y, len(N), 10, 20)
+
 
 #%%
 
@@ -121,26 +127,30 @@ def readFHI(filename):
 #N, pd = readFHI('population_structure_Norway.csv')
 
 #np.save('NorwayInit.npy', N)
-
-#N = np.load('NorwayInit.npy')
 '''
+N = np.load('NorwayInit.npy')
+
 ExamImplementation.N = N #Important as hell.
 initE = np.zeros(N.shape)
 initE[0, 0] = 50 #The home-stayers in town 2 start of exposed
+initI = np.zeros(N.shape)
+initIa = np.zeros(N.shape)
 initR = np.zeros(N.shape)
 
 Y = [] #holds data
 for x in trange(10):
-    y, t = bigSimulate180days(initE, initR, h, runCommuter, multinomialDerivates, multinomialStepping) 
+    y, t = bigSimulate180days(initE, initI, initIa, initR, h, runCommuter, multinomialDerivates, multinomialStepping) 
     Y.append(y)
 
 Y = np.array(Y)
-np.save(f'2EbNORWAY10simulations180daysh{h}.npy', Y)
-np.save(f'2EbNORWAY10timeh{h}.npy', t)
-'''
 
-#Y = np.load(f'2EbNORWAY10simulations180daysh{h}.npy')
-#t = np.load(f'2EbNORWAY10timeh{h}.npy')
+'''
+#np.save(f'2EbNORWAY10simulations180daysh{h}.npy', Y)
+#np.save(f'2EbNORWAY10timeh{h}.npy', t)
+#t, Y = bigMama()
+
+Y = np.load(f'2EbNORWAY10simulations180daysh{h}.npy')
+t = np.load(f'2EbNORWAY10timeh{h}.npy')
 #SIIaRcommuterPLOTa(t, Y, 10)
 
 #%%
@@ -167,8 +177,30 @@ def countInfected(t, Y):
                     valueSimulation[simNb, timestep ] += 1
     return t, valueSimulation
 
+@njit
+def alternativeInfectedCount(t, Y):
+    
+    valueSimulation = np.zeros((len(Y), len(t)))
+    nTowns = len(Y[0][0][0])
+    
+    for simNb, prop in enumerate(Y):
+        
+        S, E, I, Ia, R = prop[:, 0], prop[:, 1], prop[:, 2], prop[:, 3], prop[:, 4] 
+        
+        totalInfections = np.zeros(len(t))
+            
+        for townNumber in range(nTowns):
+            Ipop = np.array([np.sum(x) for x in R[:, townNumber, :]]) #Choose attribute to look at different things.
+            #Iapop = np.array([np.sum(x) for x in Ia[:, townNumber, :]])   
+            totalInfections[:] += Ipop #+ Iapop
+            
+        valueSimulation[simNb, :] = totalInfections
+            
+    return t, valueSimulation
+
 
 #t, valueSimulation = countInfected(t, Y)
+t, valueSimulation = alternativeInfectedCount(t, Y)
 
 
 
@@ -181,13 +213,13 @@ def countInfected(t, Y):
 #t = np.load('2EbActualTime.npy')
 
 
-#nationWideOutbreakPLOTe(t, counts)
+nationWideOutbreakPLOTe(t, valueSimulation, 'Number of infected nationwide')
 
 #%%
 
 #Modified reduced travel
 
-
+@njit
 def reduceTravel(N):
     
     for rowN, pop in enumerate(N):
@@ -198,7 +230,7 @@ def reduceTravel(N):
         N[rowN] = N[rowN]//10 #Decided to use % to ensure the number of people are conserved. Note, no measure taken if fewer than 10 in city. 
         N[rowN, rowN] = diagCity
         conservation2 = np.sum(N[rowN])
-        if (conservation1 != conservation2):
+        if (conservation1 != conservation2): #Not necessary, but anyway
             N[rowN, rowN] += conservation1-conservation2           
         
     return N
@@ -218,7 +250,7 @@ N = np.array( [[198600, 100, 100, 100, 100, 1000, 0, 0, 0, 0],
                [0, 0, 0, 0, 0, 1000, 0, 0, 0, 19000],               
                ]) #DO NOT DELETE
 
-print(reduceTravel(N))
+#print(reduceTravel(N))
 '''
 norwayRestrictions = np.load('NorwayInit.npy')
 tic = time()
@@ -245,18 +277,24 @@ Y = np.array(Y)
 np.save(f'2EcNORWAYRESTRICTED10simulations180daysh{h}.npy', Y)
 np.save(f'2EbNORWAYRESTRICTED10timeh{h}.npy', t)
 '''
-'''
+
 Y = np.load(f'2EcNORWAYRESTRICTED10simulations180daysh{h}.npy')
 t = np.load(f'2EbNORWAYRESTRICTED10timeh{h}.npy')
       
-t, counts = countInfected(t, Y)
+#t, counts = countInfected(t, Y)
+t, counts = alternativeInfectedCount(t, Y)
 
   
-nationWideOutbreakPLOTe(t, counts)  
-'''
+nationWideOutbreakPLOTe(t, counts, 'Number of infected nationwide')  
 
-#Peak shifted by 25 days. Does not quite believe it... It was not much...
+
+#Peak shifted by 25 days. It was not much...
 #Test the others as well...
+
+#%%
+
+
+    
         
         
         

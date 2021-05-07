@@ -35,12 +35,14 @@ h = ExamImplementation.h
 #%%
 #Deterministic epidemic
 
-#y, t = simulate180days(0, infectedRatioInit, h, runNumerics, fODE, rk4 )
-#lims = np.array( [iterativeBisection(0, 1, semiAnalyticalDeterministicR) [0], iterativeBisection(0,1, semiAnalyticalDeterministicS) [0] ])
+'''
+y, t = simulate180days(0, infectedRatioInit, h, runNumerics, fODE, rk4 )
+lims = np.array( [iterativeBisection(0, 1, semiAnalyticalDeterministicR) [0], iterativeBisection(0,1, semiAnalyticalDeterministicS) [0] ])
 labels = ['Susceptible', 'Infected', 'Recovered']
 dotLabel = ['lim R', 'lim S']
 
-#deterministicPLOTa(t, y, labels, lims, dotLabel)
+deterministicPLOTa(t, y, labels, lims, dotLabel)
+'''
 
 #np.save(f'dSIRtaskParametersh{h}.npy', y)
 #np.save(f'dSIRtaskT{h}.npy', t)
@@ -50,18 +52,26 @@ dotLabel = ['lim R', 'lim S']
 
 #Simplified
 
-#I = y.T[1]
+def analyticalDiff(t):
+    return infectedRatioInit * np.exp( (ExamImplementation.beta - 1/ExamImplementation.tau)*t)
+
+
+'''
+I = y.T[1]
 
 #redo, t = simulate180days(0, infectedRatioInit, h, runNumerics, earlydIdt, rk4)
 #Iearly = redo.T[1]
+Iearly = analyticalDiff(t)
 l = ['Infected', 'I simplified']
 
-#deterministicInfectedPLOTb(t, I, Iearly, l)
+deterministicInfectedPLOTb(t, I, Iearly, l)
+'''
+
 
 #np.save(f'IntensityB{h}.npy', I)
 #np.save(f'IntensitySimplifiedB{h}.npy', Iearly )
 
-#CHECK THIS SHIIIT should not diverge. 
+
 
 #%%
 
@@ -81,7 +91,7 @@ def peakAfterRestrictions(beta):
 
 
 #To find max allowed value, inspired from lectures. Adjusted from the prior bisection function  since the desired value is now known. 
-def bisectionMethod(desiredPeak, a, b, expression, tol = 1e-3, maxiter = 100):
+def bisectionMethod(desiredPeak, a, b, expression, tol = 1e-6, maxiter = 100):
     peakA = peakAfterRestrictions(a)
     peakB = peakAfterRestrictions(b)
     
@@ -113,6 +123,8 @@ def bisectionMethod(desiredPeak, a, b, expression, tol = 1e-3, maxiter = 100):
 
 #maxPeak, maxBeta = bisectionMethod(0.2, 0, 0.25, peakAfterRestrictions)
 
+#print(maxPeak, maxBeta)
+
 #Can easily be calculated analytically from the derivative in the expression. EDIT: NOT. 
 #print(maxPeak, maxBeta)
 #Look up similar methods to the bisection method. Secant seems nice, not Newton has to take the derivative. 
@@ -140,17 +152,16 @@ def calculateInfectedGivenR(initV):
     Infected = np.array(Infected)
     return Infected, t
         
-Infections, t = calculateInfectedGivenR(initV)
+#Infections, t = calculateInfectedGivenR(initV)
 vaccineLabels = [ '0', '1e-6', '1e-3', '0.1', '0.2', '0.4', '0.6', '0.8', '0.95']
 
-deterministicExpPLOTd(t, Infections, vaccineLabels)
+#deterministicExpPLOTd(t, Infections, vaccineLabels)
 
 #As seen from the plot, approx. 60% of the population should be vaccinated in order to prevent an outbreak  with 1e-4 imported infected. 
 
 
 #%%
 
-#Toggle rs (Selfisolating) to make reduce the infections
     
 
 

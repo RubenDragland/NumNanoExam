@@ -25,7 +25,7 @@ from ExamPlots import probabilityPLOTc
 import ExamImplementation
 
 global beta, tau, N, h #Issue with global variables for functions defined elsewhere. 
-ExamImplementation.h = 1 #Initally believe the stepping should be between 1 and 3 days, due to incubation time.
+ExamImplementation.h = 0.1 #Initally believe the stepping should be between 1 and 3 days, due to incubation time.
 ExamImplementation.beta = 0.25
 ExamImplementation.tau = 10 
 ExamImplementation.N = 100000
@@ -33,40 +33,42 @@ infectedRatioInit = 10
 
 h = ExamImplementation.h
 
+#%%
+
 
 #SIR 10 simulation, all in the same plot
 
-#Y = []
-#for x in trange(10):
-#    y, t = simulate180days(0, infectedRatioInit, h, runNumerics, binomialDerivatives, binomialStepping )
-#    Y.append(y)
+Y = []
+for x in trange(10):
+    y, t = simulate180days(0, infectedRatioInit, h, runNumerics, binomialDerivatives, binomialStepping )
+    Y.append(y) 
 #lims = np.array( [iterativeBisection(0, 1, semiAnalyticalDeterministicR) [0], iterativeBisection(0,1, semiAnalyticalDeterministicS) [0] ])
 #labels = ['Susceptible', 'Infected', 'Recovered']
 #dotLabel = ['lim R', 'lim S']
 
-#Y = np.array(Y)
+Y = np.array(Y)
 #np.save(f'2Ba10simulations180daysh{h}.npy', Y)
 #np.save(f'2Ba10timeh{h}.npy', t)
 
-Y = np.load('2Ba10simulations180daysh{h}.npy')
-tS = np.load('2Ba10timeh{h}.npy')
+#Y = np.load('2Ba10simulations180daysh{h}.npy')
+#tS = np.load('2Ba10timeh{h}.npy')
 dataDeterministic= np.load(f'dSIRtaskParametersh0.01.npy')
 tD = np.load ('dSIRtaskT0.01.npy')
 
 
 dLabels = ['deterministic S', 'deterministic I', 'deterministic R']
 
-#stochasticPLOTa(tD, tS, dataDeterministic, Y, dLabels)
+stochasticPLOTa(tD, t, dataDeterministic, Y, dLabels)
 
-#Stepsizes??? Does not affect number of infected etc. Jevnes ut. Realistic to update on a day to day basis?
+
 
 #%%
 
-#Conferming the early development
+#Confirming the early development
 
 #simplified = np.load('IntensitySimplifiedB0.01.npy')
 
-#stochasticInfectedPLOTb(tD, tS, simplified, Y, 'Simplified I'  ) 
+#stochasticInfectedPLOTb(tD, t, simplified, Y, 'Simplified I'  ) 
 
 #%%
 
@@ -104,8 +106,22 @@ def miracleProbabilityAnalysis(trials):
     
     return np.array(expectedMiracles)/trials, np.array(stdMiracles), initI
 
-trials = 10000
-p, std, N = miracleProbabilityAnalysis(trials)
+
+def deviationFromTrials(trials):
+    samples = np.zeros((10,10))
+    for test in trange(10):
+        probability, stdNOT, initI = miracleProbabilityAnalysis(trials)
+        samples[test, :] = probability
+    
+    averages = np.mean(samples, axis = 0)        
+    std = np.std(samples, axis = 0)
+    
+    return averages, std, initI
+
+trials = 1000
+#p, std, N = miracleProbabilityAnalysis(trials)
+
+#p, std, N = deviationFromTrials(trials)
 
 #np.save(f'ProbabilityP2ct{trials}.npy', p)
 #np.save(f'ProbabilitySTD2c{trials}.npy', std)
@@ -114,6 +130,6 @@ p, std, N = miracleProbabilityAnalysis(trials)
 #std = np.load('ProbabilitySTD2c1000.npy')
 #N = np.linspace(1, 10, 10)
 
-probabilityPLOTc(N, p, std)    
+#probabilityPLOTc(N, p, std)    
 
 #Uncertain about the std, but but. See answer.
