@@ -27,6 +27,7 @@ import sys
 import argparse
 
 
+
 #The general functions for the simulation.
 #Tasks and plots are done in separate files. 
 
@@ -156,7 +157,7 @@ def bigSimulate180days(initE, initI, initIa, initR, h, model, f, method ):
     
     y0 = np.array([N - initE - initR, initE, initI, initIa, initR ], dtype= np.int64 ) 
     t0 = 0
-    tMax = 180
+    tMax = 180 
     
     y, t = model(y0, t0, tMax, h, f, method)
     
@@ -374,6 +375,8 @@ def jitjitjitDerivatives(y,t):
     Ia = y[3]#.astype(np.int64)
     R =  y[4]#.astype(np.int64) 
     
+    #print(S)
+    
     
     #To be able to feed numbered probabilities, sum the each S, E etc. Does also hold when S, E are numbers.
     #Calculates total population at given time the function is called (day/night)    
@@ -384,9 +387,11 @@ def jitjitjitDerivatives(y,t):
     Rpop = np.sum(R) 
     Npop = Spop + Epop + Ipop + Iapop + Rpop #For readability.
     
+    #print(Epop)
+    
     dt = h    
     beta = 0.55
-    rs = isolationRestriction
+    rs = 1#isolationRestriction
     ra = 0.1
     fs = 0.6
     fa = 0.4
@@ -399,16 +404,18 @@ def jitjitjitDerivatives(y,t):
     pRecovering = 1 - np.exp(-dt/tauI)
     pRecoveringA = 1 - np.exp(-dt/tauI) #Now, these are numbers regardless of parameter dimensions
     
+    #print(pInfected)
+    
     l = len(I)    
     deltaI, deltaIa, deltaEzero = np.zeros(l), np.zeros(l), np.zeros(l)
     deltaS = np.zeros(l)
     deltaR = np.zeros(l)
     deltaRa = np.zeros(l)
-    for i in range(l):
-        deltaI[i], deltaIa[i], deltaEzero[i] = multinomial(I[i], [pInfected, pInfectedA, 1- pInfected - pInfectedA] )
-        deltaS[i] = binomial(S[i], pExposed) #binomial(S, pExposed) Remember to check if this works.
-        deltaR[i] = binomial(I[i], pRecovering) #binomial(I, pRecovering ) 
-        deltaRa[i] = binomial(Ia[i], pRecoveringA) #binomial(Ia, pRecoveringA) Update np.random to recommended library function
+    for i in range(l): #, 
+        deltaI[i], deltaIa[i], deltaEzero[i] = np.random.multinomial(E[i], [pInfected, pInfectedA, 1- pInfected - pInfectedA] ) #Believe this is the problem.
+        deltaS[i] = np.random.binomial(S[i], pExposed) #binomial(S, pExposed) Remember to check if this works.
+        deltaR[i] = np.random.binomial(I[i], pRecovering) #binomial(I, pRecovering ) 
+        deltaRa[i] = np.random.binomial(Ia[i], pRecoveringA) #binomial(Ia, pRecoveringA) Update np.random to recommended library function
         
     changes = np.zeros((5, l))
     changes[0], changes[1], changes[2], changes[3], changes[4] = deltaS, deltaI, deltaIa, deltaR, deltaRa
@@ -461,7 +468,9 @@ def jitjitjitINIT(y0, t0, tMax, h, f, method):
     return y, t
 
 @njit    
-def jitjitjitRUN(steps, h, tMax, nTowns, y, t, time):  
+def jitjitjitRUN(steps, h, tMax, nTowns, data, t, time): 
+    
+    y= data
     
     for x in range(steps +1):
         h = min(h, tMax-time) #Still using the same approach as given in lectures. Now take day/night into account. 
@@ -493,19 +502,91 @@ def jitjitjitRUN(steps, h, tMax, nTowns, y, t, time):
         time += h
     return y, t
     
- 
+''' 
 profiling()
 tid1 = time()
 profiling()
 tid2 = time()
 print(tid2-tid1)
-  
+'''  
  
  #Tested yesterdays jitted version. Does not seem to work... Uncertain. 
+ 
+ 
+ #%%
+@jit(nopython = True) 
+def multitest():
+    a = np.random.multinomial(10, [0.2,0.3, 0.5] ) 
+    return a
+
+#print(multitest() ) 
+'''
+N = np.array( [[198600, 100, 100, 100, 100, 1000, 0, 0, 0, 0],
+               [500, 9500, 0, 0, 0, 0, 0, 0, 0, 0],
+               [500, 0, 9500, 0, 0, 0, 0, 0, 0, 0],
+               [500, 0, 0, 9500, 0, 0, 0, 0, 0, 0],
+               [500, 0, 0, 0, 9500, 0, 0, 0, 0, 0],
+               [1000, 0, 0, 0, 0, 498200, 200, 200, 200, 200],
+               [0, 0, 0, 0, 0, 1000, 19000, 0, 0, 0],
+               [0, 0, 0, 0, 0, 1000, 0, 19000, 0, 0],
+               [0, 0, 0, 0, 0, 1000, 0, 0, 19000, 0],
+               [0, 0, 0, 0, 0, 1000, 0, 0, 0, 19000],               
+               ]) #DO NOT DELETE
+#ExamImplementation.N = N #Important as hell.
+initE = np.zeros(N.shape)
+initE[0, 0] = 25 #The home-stayers in town 2 start of exposed
+initI = np.zeros(N.shape)
+#initI[0,0] = 100000
+initIa = np.zeros(N.shape)
+initR = np.zeros(N.shape)
+
+Y = [] #holds data
+for x in trange(10):
+    #y, t = bigSimulate180days(initE, initI, initIa, initR, h, runCommuter, multinomialDerivates, multinomialStepping) #25 Exposed, no vaccinated
+    y, t = bigSimulate180days(initE, initI, initIa, initR, h, jitjitjitINIT, jitjitjitDerivatives, jitjitjitStepping)
+    Y.append(y)
+
+Y = np.array(Y) '''
+
+#print(Y)
+
+
+def calcPop(number, S):
+    pop = [np.sum(x) for x in S[:, number, :]]
+    return pop
+
+def SIIaRcommuterPLOTa(t, data, nTowns, size1, size2): #Run 10 times again.
+    
+    fig, axes = plt.subplots(nTowns, 1, sharex = True, sharey = False, constrained_layout = True, figsize = (size1, size2))
+    
+    plt.suptitle(f'Commuter model epidemic', fontsize = 20)
+    
+    for x, prop in enumerate(data):        
+        S, E, I, Ia, R = prop[:, 0], prop[:, 1], prop[:, 2], prop[:, 3], prop[:, 4]       
+        
+        
+        for number, y in enumerate(axes):
+            #Believe it is necessary to transpose
+            Spop = calcPop(number, S)           
+            Epop = calcPop(number, E) 
+            Ipop = calcPop(number, I)
+            Iapop = calcPop(number, Ia)
+            Rpop = calcPop(number, R)
+            
+            y.plot(t, Spop, alpha = 0.5) #label = f'S{number}')
+            y.plot(t, Epop, alpha = 0.5) #label = f'E{number}')
+            y.plot(t, Ipop, alpha = 0.5) #label = f'I{number}')
+            y.plot(t, Iapop, alpha = 0.5) #label = f'Ia{number}')
+            y.plot(t, Rpop, alpha = 0.5) #label = f'R{number}')
+            y.title.set_text(f'Town{number}')
+            y.set_ylabel('Population', fontsize = 14)       
+    y.set_xlabel('t [days]', fontsize = 14)
+    
+    plt.plot()
    
 
 
-
+#SIIaRcommuterPLOTa(t, Y, len(N), 10, 20)
     
     
     
